@@ -28,12 +28,10 @@ function helpPanel(){
   echo -e "\t${purpleColour}h)${endColour}${grayColour} Mostrar este panel de ayuda${endcolour}\n"
 }
 
-function searchMachine(){
-  machineName="$1"
-  echo "$machineName"
-}
 
 function updateFiles(){
+  
+
   if [ ! -f bundle.js ]; then 
     tput civis
     echo -e "\n${yellowColour}[+]${endColour}${greyColour} Descargando Datos...${endColour}\n"
@@ -41,9 +39,35 @@ function updateFiles(){
     js-beautify bundle.js | sponge bundle.js
     echo -e "\n${yellowColour}[+]${endColour}${greyColour} Datos descargados correctamente.${endColour}\n"
     tput cnorm 
-  else
-    echo "El archivo existe."  
+  else 
+    tput civis
+    echo -e "\n${yellowColour}[+]${endColour}${grayColour} Comprobando si hay actualizaciones pendientes...${endColour}\n"
+    curl -s $main_url > bundle_temp.js
+    js-beautify bundle_temp.js | sponge bundle_temp.js
+    md5_temp_value=$(md5sum bundle_temp.js | awk '{print $1}')
+    md5_original_value=$(md5sum bundle.js | awk '{print $1}')
+    
+    if [ "$md5_temp_value" == "$md5_original_value" ]; then 
+      echo -e "${yellowColour}[+]${endColour}${grayColour} No hay actualizaciones.${endColour}"
+      rm bundle_temp.js
+    else 
+      echo -e "${yellowColour}[+]${endColour}${grayColour} Actualizaciones disponibles encontradas.${endColour}"
+      rm bundle.js && mv bundle_temp.js bundle.js
+
+      echo -e "${yellowColour}[+]${endColour}${greenColour} Datos actualizados correctamente.${endColour}"
+    fi
+
+    tput cnorm
   fi
+}
+
+
+function searchMachine(){
+  machineName="$1"
+  
+  echo -e "${yellowColour}\n[+]${endColour}${grayColour} Propiedades de la Maquina${endColour} ${blueColour} $machineName${endColour}${grayColour}:${endColour}\n"
+  
+  cat bundle.js | awk "/name: \"$machineName\"/,/resuelta:/" | grep -vE "id:|sku:|resuelta" | tr -d '"' | tr -d ',' | sed 's/^ *//'  
 }
 
 
