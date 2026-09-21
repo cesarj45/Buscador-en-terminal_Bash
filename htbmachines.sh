@@ -98,7 +98,7 @@ function getYoutubeLink(){
 
   machineName="$1"
 
-  youtubeLink="$(cat bundle.js | awk "/name: \"$machineName\"/,/resuelta:/" | grep -vE "id:|sku:|resuelta" | tr -d '"' | tr -d ',' | sed 's/^ *//' | grep youtube | awk 'NF{print $NF}')"
+  youtubeLink="$(cat bundle.js | awk "/name: \"$machineName\"/,/resuelta:/" | grep -vE "id:|sku:|resuelta" | tr -d '"' | tr -d ',' | sed 's/^ *//' | grep "youtube" | awk 'NF{print $NF}')"
   
   if [ $youtubeLink ]; then
     echo -e "\n${yellowColour}[+]${endColour} ${grayColour}El tutorial para esta maquina esta en el siguiente link:${endColour} ${blueColour}$youtubeLink${endColour}\n" 
@@ -124,11 +124,36 @@ function getMachinesByDifficulty(){
 function getOSMachines(){
   os="$1"
 
+  os_results="$(cat bundle.js | grep "so: \"$os\"" -B5 | grep "name: " | awk 'NF{print $NF}' | tr -d "," | tr -d '"' | column)"
 
+  if [[ "$os_results" ]]; then
+    echo -e "\n${yellowColour}[+]${endColour} ${greyColour}Maquinas con sistema operativo${endColour} ${purpleColour}$os${endColour}"
+    cat bundle.js | grep "so: \"$os\"" -B5 | grep "name: " | awk 'NF{print $NF}' | tr -d "," | tr -d '"' | column
+
+  else 
+    echo -e "\n${redColour}[!] El sistema operativo indicado no existe${endColour}\n"
+  fi
+}
+
+function getOSDifficultyMachines(){
+  difficulty="$1"
+  os="$2"
+
+  echo -e "\n${yellowColour}[+]${endColour} ${greyColour}Las maquinas con dificultad${endColour} ${blueColour}$difficulty${endColour} ${grayColour}con sistema operativo${endColour} ${blueColour}$os${endColour} ${grayColour}son${endColour}${yellowColour}:${endColour}\n"
+  results="$(cat bundle.js | grep "so: \"$os\"" -C4 | grep "dificultad: \"$difficulty\"" -B5 | grep "name: " | awk 'NF{print $NF}' | tr -d "," | tr -d '"' | column)"
+  if [[ "$results" ]]; then
+    
+    cat bundle.js | grep "so: \"$os\"" -C4 | grep "dificultad: \"$difficulty\"" -B5 | grep "name: " | awk 'NF{print $NF}' | tr -d "," | tr -d '"' | column
+
+  else
+    echo -e "\n${redColour}[!] El sistema operativo o la dificultad proporcionada son incorrectos.${endColour}\n"
+  fi
 }
 # Indicators
 declare -i parameter_counter=0
-
+# flags
+declare -i flag_difficulty=0 
+declare -i flag_os=0 
 
 while getopts "m:ui:y:d:o:h" arg; do 
   case $arg in 
@@ -136,8 +161,8 @@ while getopts "m:ui:y:d:o:h" arg; do
     u) let parameter_counter+=2;;
     i) ipAdress="$OPTARG"; let parameter_counter+=3;;
     y) machineName="$OPTARG"; let parameter_counter+=4;;
-    d) difficulty="$OPTARG"; let parameter_counter+=5;;
-    o) os="$OPTARG"; let parameter_counter+=6;;
+    d) difficulty="$OPTARG"; flag_difficulty=1; let parameter_counter+=5;;
+    o) os="$OPTARG"; flag_os=1; let parameter_counter+=6;;
     h) ;;
   esac
 done
@@ -154,6 +179,8 @@ elif [ $parameter_counter -eq 5 ]; then
   getMachinesByDifficulty $difficulty
 elif [ $parameter_counter -eq 6 ]; then
   getOSMachines $os
+elif [ $flag_difficulty -eq 1 ] && [ $flag_os -eq 1 ]; then
+  getOSDifficultyMachines $difficulty $os 
 else
   helpPanel 
 fi
