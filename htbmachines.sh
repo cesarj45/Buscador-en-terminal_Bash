@@ -29,6 +29,7 @@ function helpPanel(){
   echo -e "\t${purpleColour}y)${endcolour}${grayColour} Obtener link de la resolucion de la maquina en Youtube${endColour}"
   echo -e "\t${purpleColour}d)${endcolour}${grayColour} Buscar por dificultad de maquinas${endColour}"
   echo -e "\t${purpleColour}o)${endcolour}${grayColour} Buscar por sistema operativo${endColour}"
+  echo -e "\t${purpleColour}s)${endcolour}${grayColour} Buscar por Skill${endColour}"
   echo -e "\t${purpleColour}h)${endColour}${grayColour} Mostrar este panel de ayuda${endcolour}\n"
 }
 
@@ -149,13 +150,25 @@ function getOSDifficultyMachines(){
     echo -e "\n${redColour}[!] El sistema operativo o la dificultad proporcionada son incorrectos.${endColour}\n"
   fi
 }
+
+function getMachinesbySkills(){
+  skill="$1"
+  check_skill="$(cat bundle.js | grep "skills: " -B 6 | grep "$skill" -i -B 6 | grep "name: " | tr -d "," | tr -d '"' | column)"
+  echo -e "\n${yellowColour}[+]${endColour} ${grayColour}Maquinas relacionadas con la skill:${endColour} ${blueColour}$skill${endColour}${yellowColour}:${endColour}"
+  if [ "$check_skill" ]; then
+    cat bundle.js | grep "skills: " -B 6 | grep "$skill" -i -B 6 | grep "name: " | tr -d "," | tr -d '"' | column
+  else
+    echo -e "\n${redColour}[!] No se encontraron maquinas con la skill proporcionada.${endColour}\n"
+  fi
+
+}
 # Indicators
 declare -i parameter_counter=0
 # flags
 declare -i flag_difficulty=0 
 declare -i flag_os=0 
 
-while getopts "m:ui:y:d:o:h" arg; do 
+while getopts "m:ui:y:d:o:s:h" arg; do 
   case $arg in 
     m) machineName="$OPTARG"; let parameter_counter+=1;;
     u) let parameter_counter+=2;;
@@ -163,6 +176,7 @@ while getopts "m:ui:y:d:o:h" arg; do
     y) machineName="$OPTARG"; let parameter_counter+=4;;
     d) difficulty="$OPTARG"; flag_difficulty=1; let parameter_counter+=5;;
     o) os="$OPTARG"; flag_os=1; let parameter_counter+=6;;
+    s) skill="$OPTARG"; let parameter_counter+=7;;
     h) ;;
   esac
 done
@@ -179,6 +193,8 @@ elif [ $parameter_counter -eq 5 ]; then
   getMachinesByDifficulty $difficulty
 elif [ $parameter_counter -eq 6 ]; then
   getOSMachines $os
+elif [ $parameter_counter -eq 7 ]; then
+  getMachinesbySkills "$skill"
 elif [ $flag_difficulty -eq 1 ] && [ $flag_os -eq 1 ]; then
   getOSDifficultyMachines $difficulty $os 
 else
